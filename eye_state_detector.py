@@ -1,9 +1,11 @@
 import cv2
+import threading
 import dlib
 import numpy as np
 from scipy.spatial import distance
 from datetime import datetime, timedelta
-from playsound import playsound
+from arduino import start_alarm, stop_alarm
+
 def calculate_EAR(eye):
     A = distance.euclidean(eye[1], eye[5])
     B = distance.euclidean(eye[2], eye[4])
@@ -30,7 +32,7 @@ def main():
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     
     eyes_closed_start = None
-    sleep_threshold = timedelta(seconds=5)
+    sleep_threshold = timedelta(seconds=2)
     sleeping = False
     
     while True:
@@ -55,8 +57,6 @@ def main():
                     print(f"The object closed their eyes at: {sleep_start_time}")
                     print(f"5 seconds have passed. Current time: {current_time}")
                     print(f"Total eyes-closed duration: {datetime.now() - eyes_closed_start}")
-
-                    playsound("sound.mp3")
             else:
                 if sleeping:
                     eyes_open_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -64,13 +64,16 @@ def main():
                     print(f"Total eyes-closed duration: {datetime.now() - eyes_closed_start}")
                 eyes_closed_start = None
                 sleeping = False
-            
             # Draw facial landmarks (optional)
             for (x, y) in shape:
                 cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
         
         # Display eye state on frame
         status_text = "Eyes: Closed" if eyes_closed_start else "Eyes: Open"
+        if eyes_closed_start:
+            start_alarm()
+        else:
+            stop_alarm()
         cv2.putText(frame, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255) if eyes_closed_start else (0, 255, 0), 2)
         
         cv2.imshow("Frame", frame)
