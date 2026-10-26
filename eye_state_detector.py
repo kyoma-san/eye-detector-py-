@@ -32,7 +32,7 @@ def main():
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     
     eyes_closed_start = None
-    sleep_threshold = timedelta(seconds=2)
+    sleep_threshold = timedelta(seconds=1)
     sleeping = False
     
     while True:
@@ -42,6 +42,9 @@ def main():
         
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = detector(gray)
+        if len(faces) == 0:
+            eyes_closed_start = None
+            sleeping = False
         
         for face in faces:
             shape = predictor(gray, face)
@@ -70,7 +73,7 @@ def main():
         
         # Display eye state on frame
         status_text = "Eyes: Closed" if eyes_closed_start else "Eyes: Open"
-        if eyes_closed_start:
+        if sleeping:
             start_alarm()
         else:
             stop_alarm()
@@ -81,6 +84,9 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
+    cap.release()
+    stop_alarm()
+    close()
     cap.release()
     cv2.destroyAllWindows()
 
